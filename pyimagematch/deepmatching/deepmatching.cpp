@@ -15,8 +15,7 @@ public:
 
     void copyArrayToImage(py::array_t<float, py::array::c_style | py::array::forcecast> & array, image_t* im){
         float *array_data = array.data();
-        int s0 = array.strides(0);
-        int s1 = array.strides(1);
+        int s0 = array.strides(0) / std::sizeof(float);
         int height = array.shape(0);
         int width = array.shape(1);
         int n=0;
@@ -25,7 +24,7 @@ public:
                 im->data[i+j*im->stride] = array_data[i+j*s0];
     }
 
-    void matching(py::array_t<float, py::array::c_style | py::array::forcecast> im1, 
+    py::array_t<float> matching(py::array_t<float, py::array::c_style | py::array::forcecast> im1, 
                   py::array_t<float, py::array::c_style | py::array::forcecast> im2){
         if ( im1.ndim() != 2 || im2.ndim() != 2)
             throw std::runtime_error("images should be 2-D NumPy array");
@@ -37,10 +36,19 @@ public:
         copyArrayToImage(im2, im2_t);
 
         float_image* corres = deep_matching(im1_t, im2_t, &dm_params, nullptr);
-        
-        // free_image(corres);
+
+        auto result = py::array_t<float>(
+            {corres->ty, corres->tx}, // shape
+            {corres->tx, 4}, // C-style contiguous strides for double
+            corres->pixels, // the data pointer
+            );
+        });
+
+        free_image(corres);
         image_delete(im1_t);
         image_delete(im2_t);
+
+        return result;
     }
 }
 
@@ -72,7 +80,7 @@ PYBIND11_MODULE(deepmatching, m) {
     py::class_<DeepMatching>(m, "DeepMatching")
         .def(py::init())
         .def_readwrite("dm_params", &DeepMatching::dm_params);
-        .def("getName", &Pet::getName);
+        .def("matching", &DeepMatching::matching);
 }
 
 
