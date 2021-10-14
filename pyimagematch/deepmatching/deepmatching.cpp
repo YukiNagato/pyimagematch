@@ -1,6 +1,5 @@
 #include <pybind11/pybind11.h>
 #include "deep_matching.h"
-#include "std.h"
 #include "image.h"
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
@@ -14,8 +13,8 @@ public:
     }
 
     void copyArrayToImage(py::array_t<float, py::array::c_style | py::array::forcecast> & array, image_t* im){
-        float *array_data = array.data();
-        int s0 = array.strides(0) / std::sizeof(float);
+        const float *array_data = array.data();
+        int s0 = array.strides(0) / sizeof(float);
         int height = array.shape(0);
         int width = array.shape(1);
         int n=0;
@@ -37,12 +36,11 @@ public:
 
         float_image* corres = deep_matching(im1_t, im2_t, &dm_params, nullptr);
 
-        auto result = py::array_t<float>(
+        py::array_t<float> result(
             {corres->ty, corres->tx}, // shape
             {corres->tx, 4}, // C-style contiguous strides for double
-            corres->pixels, // the data pointer
+            corres->pixels // the data pointer
             );
-        });
 
         free_image(corres);
         image_delete(im1_t);
@@ -50,7 +48,7 @@ public:
 
         return result;
     }
-}
+};
 
 PYBIND11_MODULE(deepmatching, m) {
     py::class_<desc_params_t>(m, "desc_params_t")
@@ -79,7 +77,7 @@ PYBIND11_MODULE(deepmatching, m) {
 
     py::class_<DeepMatching>(m, "DeepMatching")
         .def(py::init())
-        .def_readwrite("dm_params", &DeepMatching::dm_params);
+        .def_readwrite("dm_params", &DeepMatching::dm_params)
         .def("matching", &DeepMatching::matching);
 }
 
