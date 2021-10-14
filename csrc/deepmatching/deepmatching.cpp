@@ -23,7 +23,7 @@ public:
                 im->data[i+j*im->stride] = array_data[i+j*s0];
     }
 
-    py::array_t<float> matching(py::array_t<float, py::array::c_style | py::array::forcecast> im1, 
+    py::array_t<float> matching_float(py::array_t<float, py::array::c_style | py::array::forcecast> im1, 
                   py::array_t<float, py::array::c_style | py::array::forcecast> im2){
         if ( im1.ndim() != 2 || im2.ndim() != 2)
             throw std::runtime_error("images should be 2-D NumPy array");
@@ -38,7 +38,7 @@ public:
 
         py::array_t<float> result(
             {corres->ty, corres->tx}, // shape
-            {corres->tx, 4}, // C-style contiguous strides for double
+            {corres->tx*4, 4}, // C-style contiguous strides for double
             corres->pixels // the data pointer
             );
 
@@ -50,35 +50,39 @@ public:
     }
 };
 
-PYBIND11_MODULE(deepmatching, m) {
+PYBIND11_MODULE(py_deepmatching, m) {
     py::class_<desc_params_t>(m, "desc_params_t")
-        .def_readwrite("presmooth_sigma", &desc_params_t::presmooth_sigma)
-        .def_readwrite("mid_smoothing", &desc_params_t::mid_smoothing)
-        .def_readwrite("post_smoothing", &desc_params_t::post_smoothing)
-        .def_readwrite("hog_sigmoid", &desc_params_t::hog_sigmoid)
-        .def_readwrite("ninth_dim", &desc_params_t::ninth_dim)
-        .def_readwrite("norm_pixels", &desc_params_t::norm_pixels);
+        .def_readwrite("presmooth_sigma", &desc_params_t::presmooth_sigma, "image pre-smoothing")
+        .def_readwrite("mid_smoothing", &desc_params_t::mid_smoothing, "smoothing of oriented gradients (before sigmoid)")
+        .def_readwrite("post_smoothing", &desc_params_t::post_smoothing, "smoothing of oriented gradients (after  sigmoid)")
+        .def_readwrite("hog_sigmoid", &desc_params_t::hog_sigmoid, "sigmoid strength")
+        .def_readwrite("ninth_dim", &desc_params_t::ninth_dim, "small constant for gradient-less area")
+        .def_readwrite("norm_pixels", &desc_params_t::norm_pixels, "normalize pixels separately / 0: normalize atomic patches");
 
     py::class_<dm_params_t>(m, "dm_params_t")
-        .def_readwrite("prior_img_downscale", &dm_params_t::prior_img_downscale)
-        .def_readwrite("rot45", &dm_params_t::rot45)
-        .def_readwrite("overlap", &dm_params_t::overlap)
-        .def_readwrite("subsample_ref", &dm_params_t::subsample_ref)
-        .def_readwrite("nlpow", &dm_params_t::nlpow)
-        .def_readwrite("ngh_rad", &dm_params_t::ngh_rad)
-        .def_readwrite("maxima_mode", &dm_params_t::maxima_mode)
-        .def_readwrite("min_level", &dm_params_t::min_level)
-        .def_readwrite("max_psize", &dm_params_t::max_psize)
-        .def_readwrite("low_mem", &dm_params_t::low_mem)
-        .def_readwrite("scoring_mode", &dm_params_t::scoring_mode)
-        .def_readwrite("verbose", &dm_params_t::verbose)
-        .def_readwrite("n_thread", &dm_params_t::n_thread)
-        .def_readwrite("desc_params", &dm_params_t::desc_params);
+        .def_readwrite("prior_img_downscale", &dm_params_t::prior_img_downscale, "downscale the image by 2^(this) prior to matching")
+        .def_readwrite("rot45", &dm_params_t::rot45, "rotate second img by (45*rot45) prior to matching")
+        .def_readwrite("overlap", &dm_params_t::overlap, "pyramid level at which patches starts to overlap (999 => no overlap at all)")
+        .def_readwrite("subsample_ref", &dm_params_t::subsample_ref, "true if larger patches higher in the pyramid are not densely sampled")
+        .def_readwrite("nlpow", &dm_params_t::nlpow, "non-linear power rectification")
+        .def_readwrite("ngh_rad", &dm_params_t::ngh_rad, "neighborhood size in pixels => crop res_map (0 == infinite)")
+        .def_readwrite("maxima_mode", &dm_params_t::maxima_mode, "1: standard / 0: from all top-level patches")
+        .def_readwrite("min_level", &dm_params_t::min_level, "minimum pyramid level to retrieve maxima")
+        .def_readwrite("max_psize", &dm_params_t::max_psize, "maximum patch size")
+        .def_readwrite("low_mem", &dm_params_t::low_mem, "use less memory to retrieve the maxima (but approximate result)")
+        .def_readwrite("scoring_mode", &dm_params_t::scoring_mode, "0: like ICCV paper / 1: improved scoring mode")
+        .def_readwrite("verbose", &dm_params_t::verbose, "verbosity")
+        .def_readwrite("n_thread", &dm_params_t::n_thread, "parallelization on several cores, when possible")
+        .def_readwrite("desc_params", &dm_params_t::desc_params, "params for descriptors");
 
     py::class_<DeepMatching>(m, "DeepMatching")
         .def(py::init())
-        .def_readwrite("dm_params", &DeepMatching::dm_params)
-        .def("matching", &DeepMatching::matching);
+        .def_readwrite("dm_params", &DeepMatching::dm_params, "params for deepmatching")
+        .def("matching_float", &DeepMatching::matching_float, R"mydelimiter(
+        Match two float and single channel images
+        Args:
+        im1 & im2: float32 numpy array
+    )mydelimiter");
 }
 
 

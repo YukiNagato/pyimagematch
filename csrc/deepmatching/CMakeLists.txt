@@ -29,3 +29,5 @@ pybind11_add_module(py_deepmatching deepmatching.cpp)
 target_include_directories(py_deepmatching PRIVATE src)
 target_link_libraries(py_deepmatching PRIVATE deepmatching_)
 
+install(TARGETS py_deepmatching DESTINATION .)
+install(TARGETS deepmatching_ DESTINATION .)
