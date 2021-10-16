@@ -1,2 +1,5 @@
 build
 .vscode
+*.so
+*.pyc
+.idea
