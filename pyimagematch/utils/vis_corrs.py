@@ -1,20 +1,19 @@
 import sys
+import matplotlib
+matplotlib.use('TKAgg')
 from PIL import Image
-from numpy import *
+import numpy as np
 from matplotlib.pyplot import *
 
 
-def show_correspondences( img0, img1, corr ):
-    corr = corr[corr[:,4]>0,:]
-    
-    # make beautiful colors
-    center = corr[:,[1,0]].mean(axis=0) # array(img0.shape[:2])/2 #
-    corr[:,5] = arctan2(*(corr[:,[1,0]] - center).T)
-    corr[:,5] = int32(64*corr[:,5]/pi) % 128
-    
-    set_max = set(corr[:,5])
-    colors = {m:i for i,m in enumerate(set_max)}
-    colors = {m:cm.hsv(i/float(len(colors))) for m,i in colors.items()}
+def show_correspondences(img0, img1, corr):
+    height, width = img0.shape[:2]
+    center = [height/2, width/2]
+    color_idxs = np.arctan2(*(corr[:,[1,0]] - center).T)
+    color_idxs = np.int32(64*color_idxs/np.pi) % 128
+    color_idx_set = set(color_idxs)
+    color_idx_dict = {c:i for i, c in enumerate(color_idx_set)}
+    color_dict = {m:cm.hsv(i/float(len(color_idx_dict))) for m,i in color_idx_dict.items()}
     
     def motion_notify_callback(event):
       if event.inaxes==None: return
@@ -23,9 +22,7 @@ def show_correspondences( img0, img1, corr ):
       x,y = event.xdata, event.ydata
       ax1.lines = []
       ax2.lines = []
-      n = sum((corr[:,2*numaxis:2*(numaxis+1)] - [x,y])**2,1).argmin() # find nearest point
-      print("\rdisplaying #%d (%d,%d) --> (%d,%d), score=%g from maxima %d" % (n,
-        corr[n,0],corr[n,1],corr[n,2],corr[n,3],corr[n,4],corr[n,5])),;sys.stdout.flush()
+      n = np.sum((corr[:,2*numaxis:2*(numaxis+1)] - [x,y])**2,1).argmin() # find nearest point
       x,y = corr[n,0:2]
       ax1.plot(x,y,'+',ms=10,mew=2,color='blue',scalex=False,scaley=False)
       x,y = corr[n,2:4]
@@ -53,15 +50,20 @@ def show_correspondences( img0, img1, corr ):
     ax = subplot(223)
     ax.numaxis = -1
     imshow(img0/2+64,interpolation='nearest')
-    for m in set_max:
-      plot(corr[corr[:,5]==m,0],corr[corr[:,5]==m,1],'+',ms=10,mew=2,color=colors[m],scalex=0,scaley=0)
+    # for idx in range(corr.shape[0]):
+    #     plot(corr[idx, 0], corr[idx, 1], '+', ms=10, mew=2, color=color_dict[color_idxs[idx]], scalex=0, scaley=0)
+    for m in color_idx_set:
+      plot(corr[color_idxs==m,0],corr[color_idxs==m,1],'+',ms=10,mew=2,color=color_dict[m],scalex=0,scaley=0)
+    noticks()
     noticks()
     
     ax = subplot(224)
     ax.numaxis = -1
     imshow(img1/2+64,interpolation='nearest')
-    for m in set_max:
-      plot(corr[corr[:,5]==m,2],corr[corr[:,5]==m,3],'+',ms=10,mew=2,color=colors[m],scalex=0,scaley=0)
+    # for idx in range(corr.shape[0]):
+    #     plot(corr[idx, 2], corr[idx, 3], '+', ms=10, mew=2, color=color_dict[color_idxs[idx]], scalex=0, scaley=0)
+    for m in color_idx_set:
+      plot(corr[color_idxs==m,2],corr[color_idxs==m,3],'+',ms=10,mew=2,color=color_dict[m],scalex=0,scaley=0)
     noticks()
     
     subplots_adjust(left=0.01, bottom=0.01, right=0.99, top=0.99,

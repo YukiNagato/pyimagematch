@@ -178,6 +178,29 @@ DEFINE_LAYERS(float)
 #define free_cube(cube) free_image(cube)
 #define free_layers(cube) free_cube(cube)
 
+/************************
+* Sparse COO matrix
+*/
+
+typedef struct  {
+  int* indices; //  indices of columns
+  int* indptr;  //  indices of indices of rows
+  float* data;  //  row i contains values data[indptr[i]:indptr[i+1]] at columns indices[indptr[i]:indptr[i+1]]
+  int nr;
+  int nc;
+} csr_matrix;
+
+
+/************************
+* Sparse COO matrix
+*/
+
+typedef struct  {
+  int* row;
+  int* col;
+  float* data;
+  int nr,nc,n_elem;
+} coo_matrix;
 
 // debugging only
 //#include <stdio.h>  
