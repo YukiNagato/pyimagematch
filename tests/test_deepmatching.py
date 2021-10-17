@@ -14,6 +14,6 @@ im2 = cv2.imread(im2_path, 0).astype('float32')
 
 dm = DeepMatching()
 dm.dm_params.ngh_rad=128
-# dm.dm_params.n_thread = 4
-results = dm.matching(im1, im2)
+dm.dm_params.n_thread = 4
+results = dm.match(im1, im2)
 show_correspondences(im1, im2, results)
