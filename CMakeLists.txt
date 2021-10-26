@@ -17,4 +17,5 @@ find_package(OpenMP)
 add_subdirectory(3rdparty/pybind11)
 add_subdirectory(csrc/deepmatching)
 add_subdirectory(csrc/epicflow)
+add_subdirectory(csrc/brox_liu)
 
