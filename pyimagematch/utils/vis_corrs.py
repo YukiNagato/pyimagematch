@@ -1,7 +1,6 @@
 import sys
 import matplotlib
-matplotlib.use('TKAgg')
-from PIL import Image
+matplotlib.use('TkAgg')
 import numpy as np
 from matplotlib.pyplot import *
 
