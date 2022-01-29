@@ -17,8 +17,9 @@ public:
     ~TensorData();
     std::size_t getDataSize(){ return _data_size; }
     void* getDataPtr(){  return _data; }
+    TensorData copy();
 
-private:
+public:
     std::size_t _data_size;
     void* _data = nullptr;
     bool _own_data;

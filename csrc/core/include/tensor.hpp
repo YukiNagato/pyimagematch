@@ -40,20 +40,24 @@ inline bool isShapeEqual(const std::vector<int>& shapes1, const std::vector<int>
     return true;
 }
 
-template<class T>
-class Tensor{
-public:
-    Tensor(){}
 
-    // create a continuous tensor
-    Tensor(const std::vector<int>& shapes){
+template<class T>
+class TensorBase{
+public:
+    TensorBase(){}
+    TensorBase(const std::vector<int>& shapes){
         create(shapes);
     }
-    
-    Tensor(const std::vector<int>& shapes, const std::vector<int>& strides){
-        create(shapes, strides);
+
+    virtual create(const std::vector<int>& shapes) = 0;
+
+    void createContiguous(const std::vector<int>& shapes){
+        if(!isContiguous()){
+            release();
+        }
+        create(shapes);
     }
-    
+
     bool isContiguous(){
         int num_elem = 1;
         for(int i=_strides.size()-1; i>=0; i--){
@@ -70,16 +74,46 @@ public:
         }
         return true;
     }
-    
-    template <typename... Ix> T &operator()(Ix... index){
-        return *reinterpret_cast<T*>((unsigned char*)_data_ptr + byte_offset_unsafe(_strides, std::size_t(index)...));
-    }
 
     T* mutableData(){
         return _data_ptr;
     }
 
-    void create(const std::vector<int>& shapes){
+    void release(){
+        _data_ptr = nullptr;
+        _tensor_data_ptr = nullptr;
+        _strides.clear();
+        _shapes.clear();
+        _ori_data_offset = 0;
+    }
+
+    std::vector<int> stride(){ return _strides; }
+    std::vector<int> shape(){ return _shapes; }
+
+protected:
+    std::vector<int> _strides;
+    std::vector<int> _shapes;
+    std::shared_ptr<TensorData> _tensor_data_ptr = nullptr;
+    T* _data_ptr;
+    std::size_t _ori_data_offset = 0;
+
+};
+
+
+template<class T>
+class Tensor: public TensorBase<T>{
+public:
+    Tensor(){}
+
+    Tensor(const std::vector<int>& shapes, const std::vector<int>& strides){
+        create(shapes, strides);
+    }
+    
+    template <typename... Ix> T &operator()(Ix... index){
+        return *reinterpret_cast<T*>((unsigned char*)_data_ptr + byte_offset_unsafe(_strides, std::size_t(index)...));
+    }
+
+    virtual void create(const std::vector<int>& shapes) override{
         if(isShapeEqual(shapes, _shapes)){
             return;
         }
@@ -104,29 +138,13 @@ public:
         _data_ptr = (T*) _tensor_data_ptr->getDataPtr();
     }
 
-    void createContiguous(const std::vector<int>& shapes){
-        if(!isContiguous()){
-            release();
+    Tensor<T> ascontiguous(){
+        if(isContiguous()){
+
+        }else{
+            
         }
-        create(shapes);
     }
-
-    void release(){
-        _data_ptr = nullptr;
-        _tensor_data_ptr = nullptr;
-        _strides.clear();
-        _shapes.clear();
-        _ori_data_offset = 0;
-    }
-
-    std::vector<int> stride(){ return _strides; }
-    std::vector<int> shape(){ return _shapes; }
-private:
-    std::vector<int> _strides;
-    std::vector<int> _shapes;
-    std::shared_ptr<TensorData> _tensor_data_ptr = nullptr;
-    T* _data_ptr;
-    std::size_t _ori_data_offset = 0;
 };
 
 }

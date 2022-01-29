@@ -8,7 +8,7 @@
 namespace pyimagematch{
 
 template<class T>
-class GpuTensor{
+class GpuTensor: public TensorBase<T>{
 public:
     GpuTensor(){}
 
@@ -42,6 +42,11 @@ public:
     int shape(int i){
         PIM_ASSERT(i>=0 && i<_shapes.size());
         return _shapes[i];
+    }
+
+public:
+    static GpuTensor<T> fromCpuTensor(const Tensor<T>& cpu_tensor){
+        
     }
 
 private:

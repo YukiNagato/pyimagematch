@@ -4,6 +4,8 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #endif
+#include <iostream>
+#include <cstring>
 
 namespace pyimagematch{
 
@@ -42,6 +44,16 @@ TensorData::TensorData(std::size_t data_size, DataDeviceType data_type):
         break;
     case DATA_GPU:
 #ifdef PIM_WITH_CUDA
+        PIM_CHECK_CUDA(cudaMalloc( reinterpret_cast<void **>( &_gpu_data ), _data_size));
+        _data_device_status = AT_GPU;
+#else
+        PIM_WITHOUT_CUDA_ERROR;
+#endif
+        break;
+    case AT_BOTH:
+#ifdef PIM_WITH_CUDA
+        _data = fastMalloc(data_size);
+        _data_device_status = AT_BOTH;
         PIM_CHECK_CUDA(cudaMalloc( reinterpret_cast<void **>( &_gpu_data ), _data_size));
         _data_device_status = AT_GPU;
 #else
@@ -119,5 +131,48 @@ TensorData::~TensorData(){
     }
 #endif
 }
+
+TensorData TensorData::copy(){
+//     switch (_data_device_status)
+//     {
+//     case AT_CPU:
+//         TensorData copy_tensor(_data_size, DATA_CPU);
+//         return copy_tensor;
+//     case AT_GPU:
+// #ifdef PIM_WITH_CUDA
+//         TensorData copy_tensor(_data_size, DATA_GPU);
+//         return copy_tensor;
+// #else
+//         PIM_WITHOUT_CUDA_ERROR;
+// #endif
+//     case AT_BOTH:
+// #ifdef PIM_WITH_CUDA
+//         TensorData copy_tensor(_data_size, DATA_CPU);
+//         return copy_tensor;
+// #else
+//         PIM_WITHOUT_CUDA_ERROR;
+// #endif
+    
+//     }
+
+    if (_data_device_status == AT_CPU){
+        TensorData copy_tensor(_data_size, DATA_CPU);
+        std::memcpy(copy_tensor._data, _data,  _data_size);
+        return copy_tensor;
+    }else if (_data_device_status == AT_GPU){
+#ifdef PIM_WITH_CUDA
+        TensorData copy_tensor(_data_size, DATA_GPU);
+        cudaMemcpyAsync
+#else
+        PIM_WITHOUT_CUDA_ERROR;
+#endif
+
+    }
+
+
+
+
+}
+
 
 }
